@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>七月</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f1f1f1;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        
+        .chat-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ebebeb;
+            min-height: 100vh;
+            padding: 64px 20px 20px;
+            box-sizing: border-box;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+        }
+        
+        .message.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .message-left {
+            flex-direction: row;
+        }
+        
+        .message-right {
+            flex-direction: row-reverse;
+        }
+        
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 3px;
+            margin: 0 10px;
+        }
+        
+        .message-content {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 3px;
+            word-wrap: break-word;
+            font-size: 16px;
+            line-height: 1.4;
+        }
+        
+        .message-left .message-content {
+            background-color: #fff;
+            position: relative;
+        }
+        
+        .message-left .message-content:before {
+            content: '';
+            position: absolute;
+            left: -8px;
+            top: 13px;
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 6px 8px 6px 0;
+            border-color: transparent #fff transparent transparent;
+        }
+        
+        .message-right .message-content {
+            background-color: #95ec69;
+            position: relative;
+        }
+        
+        .message-right .message-content:before {
+            content: '';
+            position: absolute;
+            right: -8px;
+            top: 13px;
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 6px 0 6px 8px;
+            border-color: transparent transparent transparent #95ec69;
+        }
+
+        /* 修改导航栏样式 */
+        .nav-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 40px;
+            background-color: #ededed;
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+            border-bottom: 1px solid #d1d1d1;
+            z-index: 1000;
+            max-width: 580px;
+            margin: 0 auto;
+        }
+
+        .back-button {
+            width: 32px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            color: #000;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .chat-title {
+            flex: 1;
+            text-align: center;
+            font-size: 16px;
+            font-weight: normal;
+            margin: 0;
+            color: #000;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding: 0 10px;
+        }
+
+        .menu-button {
+            width: 32px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        /* 修改聊天容器的上边距以适应新的导航栏高度 */
+        .chat-container {
+            padding-top: 50px;
+        }
+
+        /* 添加响应式样式 */
+        @media screen and (max-width: 600px) {
+            body {
+                background-color: #ededed;
+            }
+            
+            .chat-container {
+                max-width: 100%;
+            }
+            
+            .nav-bar {
+                width: 100%;
+            }
+        }
+
+        /* 添加图片消息的样式 */
+        .message-image {
+            max-width: 200px;
+            max-height: 300px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .message-content.image-content {
+            padding: 5px;
+            background: none;
+        }
+
+        .message-right .message-content.image-content:before,
+        .message-left .message-content.image-content:before {
+            display: none;
+        }
+
+        /* 添加图片预览遮罩层 */
+        .image-preview-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .image-preview-overlay.active {
+            display: flex;
+        }
+
+        .preview-image {
+            max-width: 90%;
+            max-height: 90vh;
+            object-fit: contain;
+        }
+
+        /* 添加时间分割线样式 */
+        .time-divider {
+            text-align: center;
+            margin: 20px 0;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+        }
+
+        .time-divider.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .time-text {
+            display: inline-block;
+            padding: 4px 12px;
+            font-size: 13px;
+            color: #999;
+            background-color: rgba(0, 0, 0, 0.03);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 修改导航栏HTML结构 -->
+    <div class="nav-bar">
+        <div class="back-button">
+            <i class="fas fa-chevron-left"></i>
+        </div>
+        <h1 class="chat-title">七月</h1>
+        <div class="menu-button">
+            <i class="fas fa-ellipsis-v"></i>
+        </div>
+    </div>
+
+    <div class="chat-container" id="chatContainer"></div>
+
+    <!-- 添加图片预览遮罩层 -->
+    <div class="image-preview-overlay" id="imagePreview">
+        <img class="preview-image" id="previewImage" src="" alt="预览图片">
+    </div>
+
+    <script>
+        // 修改聊天记录数据，添加更多示例消息
+        const messages = [
+            {
+                type: 'time',
+                content: '2023年10月23日 18:03',
+                delay:680
+            },
+            {
+                type: 'left',
+                avatar: 'https://blog.tengzhou.ren/touxiang/qiyue.jpg',
+                content: '我感觉你昨天就不一样',
+                messageType: 'text',
+                delay:680
+            },
+	   {
+                type: 'left',
+                avatar: 'https://blog.tengzhou.ren/touxiang/qiyue.jpg',
+                content: '啥事儿',
+                messageType: 'text',
+                delay:680
+            },
+	   {
+                type: 'left',
+                avatar: 'https://blog.tengzhou.ren/touxiang/qiyue.jpg',
+                content: '也不理人了',
+                messageType: 'text',
+                delay:680
+            },
+	   {
+                type: 'left',
+                avatar: 'https://blog.tengzhou.ren/touxiang/qiyue.jpg',
+                content: '又',
+                messageType: 'text',
+                delay:680
+            },
+            {
+                type: 'left',
+                avatar: 'https://blog.tengzhou.ren/touxiang/qiyue.jpg',
+                content: 'https://blog.tengzhou.ren/touxiang/xiong.gif', 
+                messageType: 'image',
+                delay:680
+            },
+            {
+                type: 'right',
+                avatar: 'https://blog.tengzhou.ren/touxiang/mjh.jpeg',
+                content: '气自己这几天太怂了，有些话当着你的面怎么都说不出口。',
+                messageType: 'text',
+                delay:680
+            },
+            {
+                type: 'left',
+                avatar: 'https://blog.tengzhou.ren/touxiang/qiyue.jpg',
+                content: 'https://tengzhou.co/OwO/images/emoji/qq/fadai.gif', 
+                messageType: 'image',
+                delay:680
+            },
+
+            {
+                type: 'right',
+                avatar: 'https://blog.tengzhou.ren/touxiang/mjh.jpeg',
+                content: '做我女朋友吧',
+                messageType: 'text',
+                delay:680
+            },
+            {
+                type: 'right',
+                avatar: 'https://blog.tengzhou.ren/touxiang/mjh.jpeg',
+                content: '反正戒指你收下了',
+                messageType: 'text',
+                delay:680
+            },
+            {
+                type: 'time',
+                content: '18:07',
+                delay:10
+            },
+	   {
+                type: 'left',
+                avatar: 'https://blog.tengzhou.ren/touxiang/qiyue.jpg',
+                content: '赖上我了？',
+                messageType: 'text',
+                delay:680
+            },
+            {
+                type: 'right',
+                avatar: 'https://blog.tengzhou.ren/touxiang/mjh.jpeg',
+                content: '昂',
+                messageType: 'text',
+                delay:680
+            },
+            {
+                type: 'right',
+                avatar: 'https://blog.tengzhou.ren/touxiang/mjh.jpeg',
+                content: '以后都喊你姐姐',
+                messageType: 'text',
+                delay:680
+            },
+	   {
+                type: 'left',
+                avatar: 'https://blog.tengzhou.ren/touxiang/qiyue.jpg',
+                content: '打算赖多久',
+                messageType: 'text',
+                delay:680
+            },
+            {
+                type: 'right',
+                avatar: 'https://blog.tengzhou.ren/touxiang/mjh.jpeg',
+                content: '这就是我想要的',
+                messageType: 'text',
+                delay:680
+            },
+            {
+                type: 'left',
+                avatar: 'https://blog.tengzhou.ren/touxiang/qiyue.jpg',
+                content: 'https://blog.tengzhou.ren/touxiang/heng.gif', 
+                messageType: 'image',
+                delay:680
+            },
+            {
+                type: 'right',
+                avatar: 'https://blog.tengzhou.ren/touxiang/mjh.jpeg',
+                content: '姐姐',
+                messageType: 'text',
+                delay:680
+            },
+            {
+                type: 'left',
+                avatar: 'https://blog.tengzhou.ren/touxiang/qiyue.jpg',
+                content: 'https://blog.tengzhou.ren/touxiang/ganmaa.gif', 
+                messageType: 'image',
+                delay:680
+            },
+            {
+                type: 'right',
+                avatar: 'https://blog.tengzhou.ren/touxiang/mjh.jpeg',
+                content: '姐弟恋',
+                messageType: 'text',
+                delay:680
+            },
+	   {
+                type: 'left',
+                avatar: 'https://blog.tengzhou.ren/touxiang/qiyue.jpg',
+                content: '不要脸',
+                messageType: 'text',
+                delay:680
+            },
+	   {
+                type: 'left',
+                avatar: 'https://blog.tengzhou.ren/touxiang/qiyue.jpg',
+                content: '比我大',
+                messageType: 'text',
+                delay:680
+            },
+            {
+                type: 'right',
+                avatar: 'https://blog.tengzhou.ren/touxiang/mjh.jpeg',
+                content: '没事',
+                messageType: 'text',
+                delay:680
+            },
+            {
+                type: 'right',
+                avatar: 'https://blog.tengzhou.ren/touxiang/mjh.jpeg',
+                content: '我心理年龄比你小',
+                messageType: 'text',
+                delay:680
+            },
+            {
+                type: 'right',
+                avatar: 'https://blog.tengzhou.ren/touxiang/mjh.jpeg',
+                content: '赖你一辈子了',
+                messageType: 'text',
+                delay:680
+            },
+            {
+                type: 'right',
+                avatar: 'https://blog.tengzhou.ren/touxiang/mjh.jpeg',
+                content: '我在车上喊你名字的时候就想跟你表白',
+                messageType: 'text',
+                delay:680
+            },
+            {
+                type: 'right',
+                avatar: 'https://blog.tengzhou.ren/touxiang/mjh.jpeg',
+                content: '怂了',
+                messageType: 'text',
+                delay:680
+            },
+            {
+                type: 'right',
+                avatar: 'https://blog.tengzhou.ren/touxiang/mjh.jpeg',
+                content: '没说出口',
+                messageType: 'text',
+                delay:680
+            },
+            {
+                type: 'right',
+                avatar: 'https://blog.tengzhou.ren/touxiang/mjh.jpeg',
+                content: '昨天在台儿庄就想牵你的手',
+                messageType: 'text',
+                delay:680
+            },
+            {
+                type: 'right',
+                avatar: 'https://blog.tengzhou.ren/touxiang/mjh.jpeg',
+                content: '也没壮那个胆',
+                messageType: 'text',
+                delay:680
+            },
+            {
+                type: 'left',
+                avatar: 'https://blog.tengzhou.ren/touxiang/qiyue.jpg',
+                content: 'https://tengzhou.co/OwO/images/emoji/qq/doge.gif', 
+                messageType: 'image',
+                delay:680
+            },
+            {
+                type: 'right',
+                avatar: 'https://blog.tengzhou.ren/touxiang/mjh.jpeg',
+                content: '等你回来，你得补偿我',
+                messageType: 'text',
+                delay:680
+            },
+            {
+                type: 'left',
+                avatar: 'https://blog.tengzhou.ren/touxiang/qiyue.jpg',
+                content: '补偿你27号正经告一次',
+                messageType: 'text',
+                delay:680
+            },
+            {
+                type: 'left',
+                avatar: 'https://blog.tengzhou.ren/touxiang/qiyue.jpg',
+                content: '我先预售一下',
+                messageType: 'text',
+                delay:680
+            },
+            {
+                type: 'right',
+                avatar: 'https://blog.tengzhou.ren/touxiang/mjh.jpeg',
+                content: '行',
+                messageType: 'text',
+                delay:680
+            },
+            {
+                type: 'left',
+                avatar: 'https://blog.tengzhou.ren/touxiang/qiyue.jpg',
+                content: '开心了？',
+                messageType: 'text',
+                delay:680
+            },
+            {
+                type: 'right',
+                avatar: 'https://blog.tengzhou.ren/touxiang/mjh.jpeg',
+                content: '开心了',
+                messageType: 'text',
+                delay:680
+            },
+            {
+                type: 'left',
+                avatar: 'https://blog.tengzhou.ren/touxiang/qiyue.jpg',
+                content: '切',
+                messageType: 'text',
+                delay:680
+            }
+
+
+        ];
+
+        const chatContainer = document.getElementById('chatContainer');
+
+        // 创建消息元素
+        function createMessageElement(message) {
+            if (message.type === 'time') {
+                const timeDiv = document.createElement('div');
+                timeDiv.className = 'time-divider';
+                timeDiv.innerHTML = `<span class="time-text">${message.content}</span>`;
+                return timeDiv;
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message message-${message.type}`;
+            
+            let contentHtml = '';
+            if (message.messageType === 'image') {
+                contentHtml = `
+                    <img class="avatar" src="${message.avatar}" alt="头像">
+                    <div class="message-content image-content">
+                        <img class="message-image" src="${message.content}" alt="聊天图片" onclick="showImagePreview('${message.content}')">
+                    </div>
+                `;
+            } else {
+                contentHtml = `
+                    <img class="avatar" src="${message.avatar}" alt="头像">
+                    <div class="message-content">${message.content}</div>
+                `;
+            }
+            
+            messageDiv.innerHTML = contentHtml;
+            return messageDiv;
+        }
+
+        // 显示消息
+        function showMessage(messageElement) {
+            chatContainer.appendChild(messageElement);
+            setTimeout(() => {
+                messageElement.classList.add('show');
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }, 100);
+        }
+
+        // 按顺序显示所有消息
+        let currentIndex = 0;
+        function displayNextMessage() {
+            if (currentIndex >= messages.length) return;
+            
+            const message = messages[currentIndex];
+            const messageElement = createMessageElement(message);
+            showMessage(messageElement);
+            
+            currentIndex++;
+            setTimeout(displayNextMessage, message.delay);
+        }
+
+        // 开始显示消息
+        displayNextMessage();
+
+        // 添加图片预览功能
+        function showImagePreview(imageUrl) {
+            const overlay = document.getElementById('imagePreview');
+            const previewImg = document.getElementById('previewImage');
+            
+            previewImg.src = imageUrl;
+            overlay.classList.add('active');
+            
+            // 点击遮罩层关闭预览
+            overlay.onclick = function() {
+                overlay.classList.remove('active');
+            };
+        }
+    </script>
+</body>
+</html> 
