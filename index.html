@@ -229,6 +229,50 @@
             background-color: rgba(0, 0, 0, 0.03);
             border-radius: 4px;
         }
+
+        .video-content {
+            position: relative;
+            cursor: pointer;
+            max-width: 40%; /* 限制视频最大宽度 */
+            overflow: hidden; /* 隐藏溢出部分 */
+        }
+
+        .video-content video {
+            width: 100%; /* 视频宽度适应容器 */
+            height: auto; /* 高度自适应 */
+        }
+
+        .play-button {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 30px;
+            color: white;
+            display: none;
+        }
+
+        .video-content:hover .play-button {
+            display: block;
+        }
+
+        .video-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .video-overlay video {
+            max-width: 90%;
+            max-height: 90vh;
+        }
     </style>
 </head>
 <body>
@@ -515,9 +559,21 @@
                 content: '切',
                 messageType: 'text',
                 delay:680
+            },
+            {
+                type: 'right',
+                avatar: 'https://blog.tengzhou.ren/touxiang/mjh.jpeg',
+                content: '老婆，我爱你。',
+                messageType: 'text',
+                delay:680
+            },
+            {
+                type: 'right',
+                avatar: 'https://blog.tengzhou.ren/touxiang/mjh.jpeg',
+                content: 'https://blog.tengzhou.ren/marry/0214.mp4', // 视频链接
+                messageType: 'video',
+                delay: 680
             }
-
-
         ];
 
         const chatContainer = document.getElementById('chatContainer');
@@ -540,6 +596,14 @@
                     <img class="avatar" src="${message.avatar}" alt="头像">
                     <div class="message-content image-content">
                         <img class="message-image" src="${message.content}" alt="聊天图片" onclick="showImagePreview('${message.content}')">
+                    </div>
+                `;
+            } else if (message.messageType === 'video') {
+                contentHtml = `
+                    <img class="avatar" src="${message.avatar}" alt="头像">
+                    <div class="message-content video-content" onclick="playVideo('${message.content}')">
+                        <video class="message-video" src="${message.content}" controls></video>
+                        <div class="play-button">▶</div>
                     </div>
                 `;
             } else {
@@ -589,6 +653,24 @@
             // 点击遮罩层关闭预览
             overlay.onclick = function() {
                 overlay.classList.remove('active');
+            };
+        }
+
+        // 添加视频播放功能
+        function playVideo(videoUrl) {
+            const videoElement = document.createElement('video');
+            videoElement.src = videoUrl;
+            videoElement.controls = true;
+            videoElement.autoplay = true;
+            
+            const overlay = document.createElement('div');
+            overlay.className = 'video-overlay';
+            overlay.appendChild(videoElement);
+            
+            document.body.appendChild(overlay);
+            
+            overlay.onclick = function() {
+                document.body.removeChild(overlay);
             };
         }
     </script>
